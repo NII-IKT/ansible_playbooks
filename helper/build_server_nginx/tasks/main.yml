@@ -1,0 +1,19 @@
+---
+- name: 'scripts copy 1'
+  file:
+    dest: '/root/scripts/rpmbuild'
+    owner: 'root'
+    group: 'root'
+    mode: '0700'
+    state: 'directory'
+    recurse: 'yes'
+
+- name: 'scripts copy 2'
+  template:
+    src: 'scripts/rpmbuild/{{ item }}.j2'
+    dest: '/root/scripts/rpmbuild/{{ item }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0700'
+  with_items:
+    - 'build.sh'

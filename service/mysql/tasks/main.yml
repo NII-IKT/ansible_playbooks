@@ -1,0 +1,57 @@
+---
+- name: 'install'
+  yum:
+    name: '{{ item }}'
+    state: 'present'
+  with_items:
+    - 'mariadb-server'
+    - 'MySQL-python'
+
+- name: 'startup'
+  service:
+    name: 'mariadb'
+    state: 'started'
+    enabled: 'yes'
+
+- name: 'root password set'
+  mysql_user:
+    name: 'root'
+    password: '{{ service_mysql.root_password }}'
+    host: 'localhost'
+    state: 'present'
+    login_user: 'root'
+    login_password: '{{ service_mysql.root_password_old }}'
+
+- name: 'databases absent'
+  mysql_db:
+    name: '{{ item }}'
+    collation: 'utf8_general_ci'
+    encoding: 'utf8'
+    state: 'absent'
+    login_user: 'root'
+    login_password: '{{ service_mysql.root_password }}'
+  with_items:
+    - 'test'
+
+- name: 'databases create'
+  mysql_db:
+    name: '{{ item }}'
+    collation: 'utf8_general_ci'
+    encoding: 'utf8'
+    state: 'present'
+    login_user: 'root'
+    login_password: '{{ service_mysql.root_password }}'
+  with_items: '{{ service_mysql.databases }}'
+
+- name: 'users create'
+  mysql_user:
+    name: '{{ item.0.name }}'
+    password: '{{ item.0.password }}'
+    priv: '{{ item.1 }}'
+    state: 'present'
+    update_password: 'always'
+    login_user: 'root'
+    login_password: '{{ service_mysql.root_password }}'
+  with_subelements:
+     - '{{ service_mysql.users }}'
+     - privileges

@@ -1,0 +1,83 @@
+---
+#
+# yum
+#
+
+# yum configuration
+- name: 'yum configuration 1'
+  template:
+    src: 'configs/yum/yum.conf.j2'
+    dest: '/etc/yum.conf'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+
+#
+# yum-cron
+#
+
+# yum-cron install
+- name: 'yum-cron install 1'
+  yum:
+    name: 'yum-cron'
+    state: 'present'
+
+# yum-cron configuration
+- name: 'yum-cron configuration 1'
+  template:
+    src: 'configs/yum_cron/{{ item }}.j2'
+    dest: '/etc/yum/{{ item }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  notify: 'yum-cron restart'
+  with_items:
+    - 'yum_cron.conf'
+    - 'yum_cron_hourly.conf'
+
+# yum-cron startup
+- name: 'yum-cron startup 1'
+  service:
+    name: 'yum-cron'
+    state: 'started'
+    enabled: 'yes'
+
+#
+# yum-repos
+#
+
+# yum-repos preparations
+- name: 'yum-repos preparations 1'
+  file:
+    dest: '/etc/yum.repos.d/{{ item }}'
+    state: 'absent'
+  with_items:
+    - 'CentOS-Base.repo'
+    - 'CentOS-CR.repo'
+    - 'CentOS-Debuginfo.repo'
+    - 'CentOS-fasttrack.repo'
+    - 'CentOS-Media.repo'
+    - 'CentOS-Sources.repo'
+    - 'CentOS-Vault.repo'
+
+# yum-repos keys
+- name: 'yum-repos keys 1'
+  copy:
+    src: 'gpg_keys/{{ item }}'
+    dest: '/etc/pki/rpm-gpg/{{ item }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  with_items:
+    - 'RPM-GPG-KEY-EPEL-7'
+    - 'RPM-GPG-KEY-rpmforge-dag'
+
+# yum-repos configuration
+- name: 'yum-repos configuration 1'
+  template:
+    src: 'configs/yum_repos/repository.repo.j2'
+    dest: '/etc/yum.repos.d/{{ item.name }}.repo'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  with_items: '{{ system_packages.repositories }}'

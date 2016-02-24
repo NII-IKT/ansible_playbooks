@@ -1,0 +1,26 @@
+---
+# preparations
+- name: 'preparations 1'
+  yum:
+    name: '{{ item }}'
+    state: 'absent'
+  with_items:
+    - 'postfix'
+    - 'tuned'
+    - 'NetworkManager'
+
+- name: 'hostname'
+  hostname:
+    name: '{{ system_basic.hostname }}'
+
+- name: 'timezone'
+  raw: 'timedatectl set-timezone {{ system_basic.timezone }}'
+
+# config
+- name: 'config 1'
+  template:
+    src: 'configs/sysctl/sysctl.conf.j2'
+    dest: '/etc/sysctl.conf'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'

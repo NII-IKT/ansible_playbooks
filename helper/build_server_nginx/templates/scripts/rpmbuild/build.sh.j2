@@ -1,0 +1,69 @@
+#!/bin/bash
+
+VERSION={{ helper_build_server_nginx.nginx_version }}
+UPDATE={{ helper_build_server_nginx.nginx_update }}
+
+# install srpm
+rpm -ivh http://nginx.org/packages/mainline/centos/7/SRPMS/nginx-$VERSION.el7.ngx.src.rpm
+
+# install dependencies
+if [ $UPDATE -ne 1 ]; then
+    # install tools
+    yum groupinstall -y  'Development Tools'
+    yum install -y rpmdevtools
+    yum install -y openssl-devel zlib-devel pcre-devel gd-devel
+
+    # download 3rd party
+    mkdir -p /var/repositories
+    cd /var/repositories
+
+{% if helper_build_server_nginx.modules.third_party is defined %}
+{% for module in helper_build_server_nginx.modules.third_party %}
+git clone {{ module.repository }}
+{% endfor %}
+{% endif %}
+
+fi
+
+################################################################################
+# configure modules
+################################################################################
+
+cd /root/rpmbuild/SPECS/
+
+# disable modules
+{% if helper_build_server_nginx.modules.disable is defined %}
+{% for module in helper_build_server_nginx.modules.disable %}
+sed '/with-{{ module }}/d' -i nginx.spec
+{% endfor %}
+{% endif %}
+
+# enable built-in modules
+{% if helper_build_server_nginx.modules.enable is defined %}
+{% for module in helper_build_server_nginx.modules.enable %}
+sed '/with-http_ssl_module/ a\
+--with-{{ module }} \\' -i nginx.spec
+{% endfor %}
+{% endif %}
+
+# enable third party modules
+{% if helper_build_server_nginx.modules.third_party is defined %}
+{% for module in helper_build_server_nginx.modules.third_party %}
+sed '/with-http_ssl_module/ a\
+--add-module=/var/repositories/{{ module.path }} \\' -i nginx.spec
+{% endfor %}
+{% endif %}
+
+################################################################################
+# build
+################################################################################
+
+cd /root/rpmbuild/SPECS/
+
+rpmbuild -bb nginx.spec -D 'debug_package %{nil}'
+
+mv /root/rpmbuild/RPMS/x86_64/nginx-$VERSION.el7.centos.ngx.x86_64.rpm \
+    /home/{{ helper_build_server_nginx.distributor.user }}/nginx.x86_64.rpm
+
+chown {{ helper_build_server_nginx.distributor.user }}:{{ helper_build_server_nginx.distributor.group }} \
+    /home/{{ helper_build_server_nginx.distributor.user }}/nginx.x86_64.rpm

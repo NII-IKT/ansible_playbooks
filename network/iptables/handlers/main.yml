@@ -1,0 +1,4 @@
+---
+# iptables service comes with predefined rules, so clean it
+- name: 'iptables clean rules'
+  raw: 'iptables -F; iptables -X; iptables -t nat -F; iptables -t nat -X; iptables -t mangle -F; iptables -t mangle -X; service iptables save'

@@ -1,0 +1,72 @@
+### startup settings
+user {{ service_nginx.user }} {{ service_nginx.group }};
+pid /var/run/nginx.pid;
+
+### worker settings
+worker_priority {{ service_nginx.worker.priority }};
+worker_processes {{ service_nginx.worker.processes }};
+worker_cpu_affinity {{ service_nginx.worker.cpu_affinity }};
+#worker_rlimit_core 0;
+#worker_rlimit_nofile 1024;
+#worker_rlimit_sigpending
+#working_directory
+
+events {
+    worker_connections {{ service_nginx.worker.connections }};
+    use epoll;
+}
+
+http {
+    include /etc/nginx/mime_types.conf;
+    default_type text/html;
+
+    ### basic
+    sendfile on; # should be disabled on reverse proxy
+    sendfile_max_chunk 128k;
+    #tcp_nopush on; # useless
+    #tcp_nodelay on; # useless on RHEL
+
+    ### security
+    server_tokens off;
+    #disable_symlinks on;
+    #ignore_invalid_headers on;
+
+    ### keepalive
+    keepalive_disable msie6;
+    keepalive_requests 64;
+    keepalive_timeout 60s;
+
+    ### limitations
+    client_header_buffer_size 1k;
+    client_body_buffer_size 8k; # x86_64 page size
+    client_header_timeout 30s;
+    client_body_timeout 30s;
+    client_max_body_size 1m;
+    resolver_timeout 10s;
+    send_timeout 30s;
+
+    ### gzip
+    gzip on;
+    gzip_buffers {{ service_nginx.gzip.buffers_count }} 8k;
+    gzip_comp_level {{ service_nginx.gzip.comp_level }};
+    gzip_disable msie6;
+    gzip_min_length {{ service_nginx.gzip.min_length }};
+    gzip_http_version 1.1;
+    gzip_proxied any;
+    gzip_types text/plain text/css text/xml text/javascript application/json application/xml application/x-javascript application/rss+xml;
+    gzip_vary on;
+
+    ### logging
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+
+    ### log formats
+    # log_format combined '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent"';
+    
+    ### virtual hosts
+{% if service_nginx.hosts is defined %}
+{% for host in service_nginx.hosts %}
+    include /etc/nginx/hosts/{{ host.hostname }}/config.conf;
+{% endfor %}
+{% endif %}
+}

@@ -1,0 +1,184 @@
+#
+# _chain_create_in
+#
+{% macro _chain_create_in(chain, protocol, port) %}
+
+    iptables -A INPUT \
+        -i {{ chain.interface }} \
+        -p {{ protocol }} \
+        --dport {{ port }} \
+        -j {{ chain.name }}
+
+    iptables -A OUTPUT \
+        -o {{ chain.interface }} \
+        -p {{ protocol }} \
+        --sport {{ port }} \
+        -j {{ chain.name }}
+
+{% endmacro %}
+
+#
+# _chain_create_out
+#
+{% macro _chain_create_out(chain, protocol, port) %}
+
+    iptables -A INPUT \
+        -i {{ chain.interface }} \
+        -p {{ protocol }} \
+        --sport {{ port }} \
+        -j {{ chain.name }}
+
+    iptables -A OUTPUT \
+        -o {{ chain.interface }} \
+        -p {{ protocol }} \
+        --dport {{ port }} \
+        -j {{ chain.name }}
+
+{% endmacro %}
+
+#
+# chain_create
+#
+{% macro chain_create(chain) %}
+
+    {% if chain.create == 'yes' %}
+
+        iptables -N {{ chain.name }}
+
+        {% for protocols in chain.protocols %}
+
+            {% if chain.ports.in is defined %}
+                {% for port in chain.ports.in %}
+                    {{ _chain_create_in(chain, protocols, port) }}
+                {% endfor %}
+            {% endif %}
+
+            {% if chain.ports.out is defined %}
+                {% for port in chain.ports.out %}
+                    {{ _chain_create_out(chain, protocols, port) }}
+                {% endfor %}
+            {% endif %}
+
+        {% endfor %}
+
+    {% endif %}
+
+{% endmacro %}
+
+#
+# _chain_add_rule
+#
+{% macro _chain_add_rule(chain, rule, protocol, src_ip, dst_ip, src_port, dst_port) %}
+
+    iptables \
+        -A {{ chain.name }} \
+        -p {{ protocol }} \
+        {% if src_ip != '*' %} -s {{ src_ip }} {% endif %} \
+        {% if dst_ip != '*' %} -d {{ dst_ip }} {% endif %} \
+        {% if src_port != '*' %} --sport {{ src_port }} {% endif %} \
+        {% if dst_port != '*' %} --dport {{ dst_port }} {% endif %} \
+        {% if rule.conntrack is defined and rule.conntrack == 'all' %} -m conntrack --ctstate NEW,ESTABLISHED,RELATED {% endif %} \
+        {% if rule.conntrack is defined and rule.conntrack == 'established' %} -m conntrack --ctstate ESTABLISHED,RELATED {% endif %} \
+        -j {{ rule.action }}
+
+{% endmacro %}
+
+#
+# chain_add_rule
+#
+{% macro chain_add_rule(chain, rule) %}
+
+    {% for protocol in chain.protocols %}
+        {% for src_ip in rule.src.ips %}
+            {% for dst_ip in rule.dst.ips %}
+                {% for src_port in rule.src.ports %}
+                    {% for dst_port in rule.dst.ports %}
+
+                        {{ _chain_add_rule(chain, rule, protocol, src_ip, dst_ip, src_port, dst_port) }}
+
+                    {% endfor %}
+                {% endfor %}
+            {% endfor %}
+        {% endfor %}
+    {% endfor %}
+
+{% endmacro %}
+
+#
+# chain_set_policy
+#
+{% macro chain_set_policy(chain) %}
+
+    iptables -A {{ chain.name }} -j LOG --log-level 7 --log-prefix "[{{ chain.name }}]"
+
+    {% if chain.policy is defined %}
+
+        iptables -P {{ chain.name }} {{ chain.policy }}
+
+    {% endif %}
+
+    {% if chain.create == 'yes' %}
+
+        iptables -A {{ chain.name }} -j DROP
+
+    {% endif %}
+
+{% endmacro %}
+
+#
+# chain_flush
+#
+{% macro chain_flush(chain) %}
+
+    iptables -F {{ chain.name }}
+
+{% endmacro %}
+
+#
+# nat_dnat
+#
+{% macro nat_dnat(rule) %}
+
+    iptables -A PREROUTING -t nat \
+        -i {{ rule.interface }} \
+        -p {{ rule.protocol }} \
+        {% if rule.src.ip != '*' %} -s {{ rule.src.ip }} {% endif %} \
+        {% if rule.src.port != '*' %} --sport {{ rule.src.port }} {% endif %} \
+        {% if rule.dst.ip != '*' %} -d {{ rule.dst.ip }} {% endif %} \
+        {% if rule.dst.port != '*' %} --dport {{ rule.dst.port }} {% endif %} \
+        -j DNAT --to {{ rule.to.ip }}:{{ rule.to.port }}
+
+{% endmacro %}
+
+#
+# nat_snat
+#
+{% macro nat_snat(rule) %}
+
+    iptables -t nat -A POSTROUTING \
+        -o {{ rule.interface }} \
+        -p {{ rule.protocol }} \
+        {% if rule.src.ip != '*' %} -s {{ rule.src.ip }} {% endif %} \
+        {% if rule.src.port != '*' %} --sport {{ rule.src.port }} {% endif %} \
+        {% if rule.dst.ip != '*' %} -d {{ rule.dst.ip }} {% endif %} \
+        {% if rule.dst.port != '*' %} --dport {{ rule.dst.port }} {% endif %} \
+        -j SNAT --to {{ rule.to.ip }}
+
+{% endmacro %}
+
+#
+# mangle_mark
+#
+{% macro mangle_mark(rule) %}
+
+    iptables -t mangle -A {{ rule.chain }} \
+        {% if rule.src.interface != '*' %} -i {{ rule.src.interface }} {% endif %} \
+        {% if rule.dst.interface != '*' %} -o {{ rule.dst.interface }} {% endif %} \
+        -p {{ rule.protocol }} \
+        {% if rule.src.ip != '*' %} -s {{ rule.src.ip }} {% endif %} \
+        {% if rule.src.port != '*' %} --sport {{ rule.src.port }} {% endif %} \
+        {% if rule.dst.ip != '*' %} -d {{ rule.dst.ip }} {% endif %} \
+        {% if rule.dst.port != '*' %} --dport {{ rule.dst.port }} {% endif %} \
+        -j MARK --set-mark {{ rule.mark }}
+
+{% endmacro %}

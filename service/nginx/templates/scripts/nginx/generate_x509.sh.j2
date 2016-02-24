@@ -1,0 +1,19 @@
+#!/bin/bash
+
+HOSTNAME="{{ item.hostname }}"
+USER="{{ service_nginx.user }}"
+GROUP="{{ service_nginx.group }}"
+
+openssl genrsa -out /etc/nginx/hosts/$HOSTNAME/server.key {{ item.ssl.key.bits }}
+
+openssl req -new -sha256 -key /etc/nginx/hosts/$HOSTNAME/server.key \
+    -out /etc/nginx/hosts/$HOSTNAME/server.csr \
+    -config /root/scripts/nginx/x509_$HOSTNAME.conf
+
+openssl x509 -req -days {{ item.ssl.key.expire }} \
+    -in /etc/nginx/hosts/$HOSTNAME/server.csr \
+    -signkey /etc/nginx/hosts/$HOSTNAME/server.key \
+    -out /etc/nginx/hosts/$HOSTNAME/server.crt
+
+chown $USER:$GROUP /etc/nginx/hosts/$HOSTNAME/server.*
+chmod 0400 /etc/nginx/hosts/$HOSTNAME/server.*

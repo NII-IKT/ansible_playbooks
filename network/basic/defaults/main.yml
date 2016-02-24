@@ -1,0 +1,18 @@
+---
+network_basic:
+  interfaces:
+    - name: 'eth0'
+      uuid: '91d804f0-d754-4723-8fcb-e4bf7762bc62'
+      ip: '48.48.48.48'
+      mask: '255.255.255.0'
+      gateway: '48.48.48.1' # <optional>
+      dns1: '8.8.8.8' # <optional>
+      dns2: '8.8.4.4' # <optional>
+      defroute: 'yes' # <optional>
+
+      rules: # <optional>
+        - 'fwmark 1 table 1'
+
+    - name: 'lo'
+      uuid: 'd2f5a664-afd1-4296-aa36-e613804c1289'
+      ip: '127.0.0.1'

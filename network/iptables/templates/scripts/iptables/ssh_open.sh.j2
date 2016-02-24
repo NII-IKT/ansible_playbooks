@@ -1,0 +1,23 @@
+{% import 'iptables.j2' as iptables with context %}
+#!/bin/bash
+
+{% for chain in network_iptables.filter %}
+    {% if chain.manual is defined %}
+
+        # flush
+        {{ iptables.chain_flush(chain) }}
+
+        # rules
+        {% if chain.rules is defined %}
+            {% for rule in chain.rules %}
+                {{ iptables.chain_add_rule(chain, rule) }}
+            {% endfor %}
+        {% endif %}
+
+        # policies
+        {{ iptables.chain_set_policy(chain) }}
+
+    {% endif %}
+{% endfor %}
+
+exit 0

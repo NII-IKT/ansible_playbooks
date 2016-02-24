@@ -1,0 +1,60 @@
+---
+- name: 'install 1'
+  yum:
+    name: 'php-fpm'
+    state: 'present'
+
+- name: 'install 2'
+  yum:
+    name: '{{ item }}'
+    state: 'present'
+  with_items: service_php.modules
+
+- name: 'defaults remove'
+  file:
+    dest: '/etc/php-fpm.d/www.conf'
+    state: 'absent'
+
+- name: 'configs copy 1'
+  template:
+    src: 'configs/php/php-fpm.conf.j2'
+    dest: '/etc/php-fpm.conf'
+    owner: '{{ service_php.user }}'
+    group: '{{ service_php.group }}'
+    mode: '0600'
+  notify: 'php restart'
+
+- name: 'configs copy 2'
+  template:
+    src: 'configs/php/php-fpm.d/pool.conf.j2'
+    dest: '/etc/php-fpm.d/{{ item.pool }}.conf'
+    owner: '{{ item.user | default(service_php.pool_defaults.user) }}'
+    group: '{{ item.group | default(service_php.pool_defaults.group) }}'
+    mode: '0600'
+  with_items: service_php.pools
+  notify: 'php restart'
+
+- name: 'configs copy 3'
+  template:
+    src: 'configs/php/php.ini.j2'
+    dest: '/etc/php.ini'
+    owner: '{{ service_php.user }}'
+    group: '{{ service_php.group }}'
+    mode: '0600'
+  notify: 'php restart'
+
+- name: 'folders create'
+  file:
+    dest: '/var/www/{{ item.path_suffix }}'
+    owner: '{{ item.user | default(service_php.pool_defaults.user) }}'
+    group: '{{ item.group | default(service_php.pool_defaults.group) }}'
+    mode: '0770'
+    state: 'directory'
+    recurse: 'yes'
+  with_items: service_php.pools
+
+- name: 'startup'
+  service:
+    name: 'php-fpm'
+    state: 'started'
+    enabled: 'yes'

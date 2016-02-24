@@ -1,0 +1,166 @@
+---
+# folders
+- name: 'folders 1'
+  file:
+    dest: '{{ item }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0700'
+    state: 'directory'
+    recurse: 'yes'
+  with_items:
+    - '/root/tmp'
+    - '/root/scripts/nginx'
+
+- name: 'folders 2'
+  file:
+    dest: '/etc/nginx/hosts/{{ item.hostname }}'
+    owner: '{{ service_nginx.user }}'
+    group: '{{ service_nginx.group }}'
+    mode: '0700'
+    state: 'directory'
+    recurse: 'yes'
+  with_items: service_nginx.hosts
+
+- name: 'folders 3'
+  file:
+    dest: '/var/www/{{ item.hostname }}'
+    owner: '{{ service_nginx.user }}'
+    group: '{{ service_nginx.group }}'
+    mode: '0770'
+    state: 'directory'
+    recurse: 'yes'
+  with_items: service_nginx.hosts
+
+- name: 'folders 4'
+  file:
+    dest: '/var/log/nginx/{{ item.hostname }}'
+    owner: '{{ service_nginx.user }}'
+    group: '{{ service_nginx.group }}'
+    mode: '0110'
+    state: 'directory'
+    recurse: 'yes'
+  with_items: service_nginx.hosts
+
+# install
+- name: 'install 1'
+  yum:
+    name: '{{ item }}'
+    state: 'present'
+  with_items:
+    - 'pcre'
+    - 'httpd-tools'
+
+- name: 'install 2'
+  copy:
+    src: 'nginx.x86_64.rpm'
+    dest: '/root/tmp'
+
+- name: 'install 3'
+  yum:
+    name: '/root/tmp/nginx.x86_64.rpm'
+    state: 'present'
+
+# prepare
+- name: 'prepare 1'
+  file:
+    dest: '/etc/nginx/{{ item }}'
+    state: 'absent'
+  with_items:
+    - 'conf.d/default.conf'
+    - 'conf.d'
+    - 'koi-utf'
+    - 'koi-win'
+    - 'win-utf'
+    - 'mime.types'
+    - 'fastcgi_params'
+    - 'scgi_params'
+    - 'uwsgi_params'
+
+# config
+- name: 'config 1'
+  template:
+    src: 'configs/nginx/{{ item }}.j2'
+    dest: '/etc/nginx/{{ item }}'
+    owner: '{{ service_nginx.user }}'
+    group: '{{ service_nginx.group }}'
+    mode: '0400'
+  with_items:
+    - 'nginx.conf'
+    - 'mime_types.conf'
+    - 'fastcgi_params.conf'
+  notify: 'nginx restart'
+
+- name: 'config 2'
+  template:
+    src: 'configs/nginx/hosts/config.conf.j2'
+    dest: '/etc/nginx/hosts/{{ item.hostname }}/config.conf'
+    owner: '{{ service_nginx.user }}'
+    group: '{{ service_nginx.group }}'
+    mode: '0400'
+  with_items: service_nginx.hosts
+  notify: 'nginx restart'
+
+- name: 'config 3'
+  template:
+    src: 'configs/nginx/hosts/config_locations.conf.j2'
+    dest: '/etc/nginx/hosts/{{ item.hostname }}/config_locations.conf'
+    owner: '{{ service_nginx.user }}'
+    group: '{{ service_nginx.group }}'
+    mode: '0400'
+  with_items: service_nginx.hosts
+  when: item.type == "wrap"
+  notify: 'nginx restart'
+
+# scripts
+- name: 'scripts 1'
+  template:
+    src: 'scripts/nginx/generate_htpasswd.sh.j2'
+    dest: '/root/scripts/nginx/generate_htpasswd_{{ item.hostname }}.sh'
+    owner: 'root'
+    group: 'root'
+    mode: '0700'
+  with_items: service_nginx.hosts
+
+- name: 'scripts 2'
+  template:
+    src: 'scripts/nginx/generate_x509.sh.j2'
+    dest: '/root/scripts/nginx/generate_x509_{{ item.hostname }}.sh'
+    owner: 'root'
+    group: 'root'
+    mode: '0700'
+  with_items: service_nginx.hosts
+
+- name: 'scripts 3'
+  template:
+    src: 'scripts/nginx/{{ item }}.j2'
+    dest: '/root/scripts/nginx/{{ item }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0700'
+  with_items:
+    - 'generate_htpasswds.sh'
+    - 'generate_x509s.sh'
+
+- name: 'scripts 4'
+  template:
+    src: 'scripts/nginx/x509.conf.j2'
+    dest: '/root/scripts/nginx/x509_{{ item.hostname }}.conf'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  with_items: service_nginx.hosts
+
+# raw
+- name: 'raw 1' # certificates generate
+  raw: 'if [ ! -e /root/scripts/nginx/generate_x509s_done ] ; then /root/scripts/nginx/generate_x509s.sh; fi'
+
+- name: 'raw 2' # passwords generate
+  raw: 'if [ ! -e /root/scripts/nginx/generate_htpasswd_done ] ; then /root/scripts/nginx/generate_htpasswds.sh; fi'
+
+# startup
+- name: 'startup 1'
+  service:
+    name: 'nginx'
+    state: 'started'
+    enabled: 'yes'

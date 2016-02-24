@@ -1,0 +1,21 @@
+---
+- name: 'install'
+  yum:
+    name: 'git'
+    state: 'present'
+
+- name: 'folders create'
+  file:
+    dest: '/var/repositories/{{ item }}.git'
+    owner: '{{ system_git.user }}'
+    group: '{{ system_git.group }}'
+    mode: '0700'
+    state: 'directory'
+    recurse: 'yes'
+  with_items: system_git.repositories
+
+- name: 'repositories init'
+  # init bare repositories if not exists
+  # can't use ls -A command to determine dir not empty because of global bash alias 'ls -a'
+  raw: 'if [ ! -e /var/repositories/{{ item }}/HEAD ] ; then /usr/bin/git init --bare /var/repositories/{{ item }}.git ; chown -R {{ system_git.user }}:{{ system_git.group }} /var/repositories/{{ item }}.git ; fi'
+  with_items: system_git.repositories

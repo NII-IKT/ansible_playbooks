@@ -1,0 +1,37 @@
+---
+helper_build_server_nginx:
+  distributor:
+    user: 'user'
+    group: 'user'
+
+  nginx_version: '1.9.9-1'
+  nginx_update: '0'
+
+  modules:
+    disable:
+      - 'http_dav_module' # The ngx_http_dav_module module is intended for file management automation via the WebDAV protocol. The module processes HTTP and WebDAV methods PUT, DELETE, MKCOL, COPY, and MOVE.
+      - 'http_flv_module' # The ngx_http_flv_module module provides pseudo-streaming server-side support for Flash Video (FLV) files.
+      - 'http_mp4_module' # The ngx_http_mp4_module module provides pseudo-streaming server-side support for MP4 files. Such files typically have the .mp4, .m4v, or .m4a filename extensions.
+      - 'http_random_index_module' # The ngx_http_random_index_module module processes requests ending with the slash character (‘/’) and picks a random file in a directory to serve as an index file.
+      - 'http_auth_request_module' # The ngx_http_auth_request_module module (1.5.4+) implements client authorization based on the result of a subrequest.
+
+      - 'mail' # mail proxy
+      - 'mail_ssl_module' # mail proxy
+      - 'ipv6' # ip v6
+      - 'file-aio' # content streaming
+
+    enable:
+      - 'http_image_filter_module ' # The ngx_http_image_filter_module module (0.7.54+) is a filter that transforms images in JPEG, GIF, and PNG formats.
+
+    third_party:
+      # headers manipulations
+      - repository: 'https://github.com/openresty/headers-more-nginx-module.git'
+        path: 'headers-more-nginx-module'
+
+      # anti DDoS
+      - repository: 'https://github.com/kyprizel/testcookie-nginx-module.git'
+        path: 'testcookie-nginx-module'
+
+      # naxsi
+      - repository: 'https://github.com/nbs-system/naxsi.git'
+        path: 'naxsi/naxsi_src'

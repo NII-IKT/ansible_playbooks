@@ -1,0 +1,8 @@
+{% if item.sudo.defaults is defined and (item.sudo.nopasswd is not defined or item.sudo.nopasswd == '0') %}
+Defaults:{{ item.name }} {{ item.sudo.defaults }}
+{% endif %}
+{% if item.sudo.nopasswd is defined and item.sudo.nopasswd == '1' %}
+{{ item.name }} ALL=({{ item.sudo.commands }}) NOPASSWD:ALL
+{% else %}
+{{ item.name }} ALL=({{ item.sudo.commands }}) ALL
+{% endif %}

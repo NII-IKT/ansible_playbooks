@@ -1,0 +1,6 @@
+---
+system_git:
+  user: 'root'
+  group: 'root'
+  repositories:
+    - 'tests/test1'

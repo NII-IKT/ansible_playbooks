@@ -1,0 +1,34 @@
+---
+system_users:
+  users:
+    - name: 'user1'
+      group: 'user1'
+      shell: '/bin/bash'
+      createhome: 'yes'
+      home: '/home/user1'
+
+    - name: 'user2'
+      group: 'user2'
+      shell: '/sbin/nologin'
+      createhome: 'no'
+      home: '/home/user2'
+
+    - name: 'user3'
+      group: 'user3'
+      groups: 'group1,group2,group3' # <optional>
+      shell: '/bin/bash'
+      createhome: 'yes'
+      home: '/home/user3'
+      password: 'hashed' # <optional>+
+      sudo: # <optional>
+        defaults: 'rootpw'
+        nopasswd: '0'
+        commands: 'ALL'
+
+  groups:
+    - 'user1'
+    - 'user2'
+    - 'user3'
+    - 'group1'
+    - 'group2'
+    - 'group3'

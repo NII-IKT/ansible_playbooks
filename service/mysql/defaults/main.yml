@@ -1,0 +1,19 @@
+---
+service_mysql:
+  root_password_old: ''
+  root_password: '123456'
+
+  databases:
+    - 'test1'
+    - 'test2'
+
+  users:
+    - name: 'user1'
+      password: '123456'
+      privileges:
+        - 'test1.*:ALL'
+
+    - name: 'user2'
+      password: '123456'
+      privileges:
+        - 'test2.*:ALL'

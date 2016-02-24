@@ -1,0 +1,62 @@
+; Start a new pool named '{{ item.pool }}'
+[{{ item.pool }}]
+
+; Listen params
+listen = 127.0.0.1:{{ item.listen_port | default(service_php.pool_defaults.listen_port) }}
+listen.backlog = -1 ; pending connections count, -1 means unlimited
+listen.allowed_clients = 127.0.0.1
+
+; Unix user/group of workers
+user = {{ item.user | default(service_php.pool_defaults.user) }}
+group = {{ item.group | default(service_php.pool_defaults.group) }}
+
+; Process manager
+pm = dynamic
+pm.max_children = {{ item.pm_max_children | default(service_php.pool_defaults.pm_max_children) }}
+pm.start_servers = {{ item.pm_start_servers | default(service_php.pool_defaults.pm_start_servers) }}
+pm.min_spare_servers = {{ item.pm_min_spare_servers | default(service_php.pool_defaults.pm_min_spare_servers) }}
+pm.max_spare_servers = {{ item.pm_max_spare_servers | default(service_php.pool_defaults.pm_max_spare_servers) }}
+pm.max_requests = {{ item.pm_max_requests | default(service_php.pool_defaults.pm_max_requests) }}
+pm.status_path = {{ item.pm_status_path | default(service_php.pool_defaults.pm_status_path) }}
+
+; Ping
+ping.path = {{ item.ping_path | default(service_php.pool_defaults.ping_path) }}
+ping.response = {{ item.ping_response | default(service_php.pool_defaults.ping_response) }}
+
+; Limitations
+request_terminate_timeout = {{ item.request_terminate_timeout | default(service_php.pool_defaults.request_terminate_timeout) }}
+request_slowlog_timeout = {{ item.request_slowlog_timeout | default(service_php.pool_defaults.request_slowlog_timeout) }}
+rlimit_files = {{ item.rlimit_files | default(service_php.pool_defaults.rlimit_files) }}
+rlimit_core = {{ item.rlimit_core | default(service_php.pool_defaults.rlimit_core) }}
+
+; Log
+slowlog = /var/log/php-fpm/php_slow_{{ item.pool }}.log
+php_admin_value[error_log] = /var/log/php-fpm/php_error_{{ item.pool }}.log
+
+; Security
+chroot = /var/www/{{ item.path_suffix }}
+chdir = /
+catch_workers_output = {{ item.catch_workers_output | default(service_php.pool_defaults.catch_workers_output) }}
+security.limit_extensions = {{ item.security_limit_extensions | default(service_php.pool_defaults.security_limit_extensions) }}
+
+; Environment and php.ini variables
+
+{% if item.envs is defined %}{% for env in item.envs %}
+env[{{ env.name }}] = {{ env.value }}
+{% endfor %}{% endif %}
+
+{% if item.php_values is defined %}{% for php_value in item.php_values %}
+php_value[{{ php_value.name }}] = {{ php_value.value }}
+{% endfor %}{% endif %}
+
+{% if item.php_flags is defined %}{% for php_flag in item.php_flags %}
+php_flag[{{ php_flag.name }}] = {{ php_flag.value }}
+{% endfor %}{% endif %}
+
+{% if item.php_admin_values is defined %}{% for php_admin_value in item.php_admin_values %}
+php_admin_value[{{ php_admin_value.name }}] = {{ php_admin_value.value }}
+{% endfor %}{% endif %}
+
+{% if item.php_admin_flags is defined %}{% for php_admin_flag in item.php_admin_flags %}
+php_admin_flag[{{ php_admin_flag.name }}] = {{ php_admin_flag.value }}
+{% endfor %}{% endif %}

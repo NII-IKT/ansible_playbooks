@@ -1,0 +1,65 @@
+---
+service_php:
+  user: 'user'
+  group: 'user'
+
+  modules:
+    - 'php-mbstring'
+
+  pool_defaults:
+    listen_port: '9000'
+
+    user: 'user'
+    group: 'user'
+
+    pm_start_servers: '2' # number of child processes created on startup
+    pm_min_spare_servers: '2' # desired minimum number of idle server processes
+    pm_max_spare_servers: '4' # desired maximum number of idle server processes
+    pm_max_children: '4' # maximum number of child processes to be created
+    pm_max_requests: '64' # number of requests each child process should execute before respawning
+    pm_status_path: '/status' # URI to view the FPM status page
+
+    ping_path: '/ping' # ping URI to call the monitoring page of FPM
+    ping_response: 'pong' # response to a ping request
+
+    request_terminate_timeout: '60s' # timeout for serving a single request after which the worker process will be killed
+    request_slowlog_timeout: '10s' # timeout for serving a single request after which a PHP backtrace will be dumped to the 'slowlog' file
+    rlimit_files: '1024' # open file descriptor rlimit
+    rlimit_core: '0' # max core size rlimit
+
+    catch_workers_output: 'yes'
+    security_limit_extensions: '.php'
+
+  pools:
+    - id: '1'
+      pool: 'php_pool_1'
+      listen_port: '9000'
+      path_suffix: ''
+
+      user: 'user'
+      group: 'user'
+
+      pm_start_servers: '2'
+      pm_min_spare_servers: '2'
+      pm_max_spare_servers: '4'
+      pm_max_children: '4'
+      pm_max_requests: '64'
+
+      request_terminate_timeout: '30s'
+      request_slowlog_timeout: '1s'
+
+      # envs:
+      #   - name: 'env_var_name'
+      #     value: 'value'
+      # php_values:
+      #   - name: 'php_param_name'
+      #     value: 'value'
+      # php_flags:
+      #   - name: 'php_flag_name'
+      #     value: '1'
+      # php_admin_values:
+      #   - name: 'php_param_name'
+      #     value: 'value'
+      # php_admin_flags:
+      #   - name: 'php_flag_name'
+      #     value: '1s'

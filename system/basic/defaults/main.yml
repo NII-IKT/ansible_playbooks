@@ -1,0 +1,11 @@
+---
+system_basic:
+  hostname: 'default'
+  timezone: 'UTC'
+
+  ip_forward: 'yes'
+
+  interfaces:
+    - name: 'eth0'
+      disable_ipv6: 'yes'
+      rp_filter: 'no'

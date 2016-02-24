@@ -1,0 +1,15 @@
+---
+- name: 'configuration 1'
+  template:
+    src: 'configs/network/ifcfg.j2'
+    dest: '/etc/sysconfig/network-scripts/ifcfg-{{ item.name }}'
+  with_items: network_basic.interfaces
+  notify: 'network restart'
+
+- name: 'configuration 2'
+  template:
+    src: 'configs/network/rule.j2'
+    dest: '/etc/sysconfig/network-scripts/rule-{{ item.name }}'
+  with_items: network_basic.interfaces
+  when: item.rules is defined
+  notify: 'network restart'

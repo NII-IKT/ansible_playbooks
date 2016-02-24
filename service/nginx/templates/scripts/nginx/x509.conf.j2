@@ -1,0 +1,19 @@
+RANDFILE = $ENV::HOME/.rnd
+
+[ req ]
+default_bits = {{ item.ssl.key.bits }}
+default_keyfile = keyfile.pem
+distinguished_name = req_distinguished_name
+attributes = req_attributes
+prompt = no
+
+[ req_distinguished_name ]
+C = {{ item.ssl.key.country }}
+ST = {{ item.ssl.key.province }}
+L = {{ item.ssl.key.city }}
+O = {{ item.ssl.key.company }}
+OU = {{ item.ssl.key.organization_unit }}
+CN = {{ item.hostname }}
+emailAddress = {{ item.ssl.key.email }}
+
+[ req_attributes ]

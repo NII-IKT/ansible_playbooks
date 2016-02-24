@@ -1,0 +1,9 @@
+#!/bin/bash
+
+{% if service_nginx.hosts is defined %}
+    {% for host in service_nginx.hosts %}
+        /root/scripts/nginx/generate_x509_{{ host.hostname }}.sh
+    {% endfor %}
+{% endif %}
+
+echo "1" > /root/scripts/nginx/generate_x509s_done

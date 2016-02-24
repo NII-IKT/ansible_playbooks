@@ -1,0 +1,75 @@
+---
+service_nginx:
+  user: 'nginx'
+  group: 'nginx'
+
+  worker:
+    priority: '0'
+    processes: '2'
+    cpu_affinity: '01 10'
+    connections: '1024'
+
+  gzip:
+    buffers_count: '256'
+    comp_level: '4'
+    min_length: '1024'
+
+  hosts:
+    # tricky.local
+    - hostname: 'tricky.local'
+      default_server: 'yes'
+      type: 'wrap'
+      www: 'yes'
+
+      ip: '127.0.0.1'
+      port:
+        http: '80'
+        https: '443'
+
+      ssl:
+        protocols: 'TLSv1 TLSv1.1 TLSv1.2'
+        ciphers: 'RSA:ECDH:ECDSA:!RC4:!DES:!SSLv3:!SSLv2:!SSLv1'
+        key:
+          bits: '2048'
+          expire: '3650'
+          country: 'RU'
+          province: 'NSK'
+          city: 'Novosibirsk'
+          company: 'NII IKT'
+          organization_unit: 'It'
+          email: 'webmaster@tricky.local'
+
+      auth_basic:
+        user: 'user@tricky.local'
+        password: '123456'
+
+      allowed_ips: []
+      access_log_format: 'combined'
+      error_log_level: 'error'
+
+    # regular.local
+    - hostname: 'regular.local'
+      type: 'nowrap'
+      www: 'yes'
+
+      ip: '127.0.0.1'
+      port:
+        http: '80'
+        https: '443'
+
+      ssl:
+        protocols: 'TLSv1 TLSv1.1 TLSv1.2'
+        ciphers: 'RSA:ECDH:ECDSA:!RC4:!DES:!SSLv3:!SSLv2:!SSLv1'
+        key:
+          bits: '2048'
+          expire: '3650'
+          country: 'RU'
+          province: 'NSK'
+          city: 'Novosibirsk'
+          company: 'NII IKT'
+          organization_unit: 'It'
+          email: 'webmaster@regular.local'
+
+      auth_basic:
+        user: 'user@regular.local'
+        password: '123456'

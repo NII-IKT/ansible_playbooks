@@ -1,0 +1,51 @@
+{% import 'iptables.j2' as iptables with context %}
+#!/bin/bash
+
+# flush chains
+iptables -F
+iptables -X
+iptables -t nat -F
+iptables -t nat -X
+iptables -t mangle -F
+iptables -t mangle -X
+
+# filter
+{% for chain in network_iptables.filter %}
+    {{ iptables.chain_create(chain) }}
+
+    {% if chain.rules is defined and chain.manual is not defined %}
+        {% for rule in chain.rules %}
+            {{ iptables.chain_add_rule(chain, rule) }}
+        {% endfor %}
+    {% endif %}
+
+    {{ iptables.chain_set_policy(chain) }}
+{% endfor %}
+
+# nat_dnat
+{% if network_iptables.nat is defined and network_iptables.nat.dnat is defined %}
+    {% for rule in network_iptables.nat.dnat %}
+        {{ iptables.nat_dnat(rule) }}
+    {% endfor %}
+{% endif %}
+
+# nat_snat
+{% if network_iptables.nat is defined and network_iptables.nat.snat is defined %}
+    {% for rule in network_iptables.nat.snat %}
+        {{ iptables.nat_snat(rule) }}
+    {% endfor %}
+{% endif %}
+
+# mangle_mark
+{% if network_iptables.mangle is defined and network_iptables.mangle.mark is defined %}
+    {% for rule in network_iptables.mangle.mark %}
+        {{ iptables.mangle_mark(rule) }}
+    {% endfor %}
+{% endif %}
+
+{% if network_iptables.save == 'yes' %}
+    # save permanent
+    service iptables save
+{% endif %}
+
+exit 0

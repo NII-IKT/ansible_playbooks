@@ -1,0 +1,32 @@
+---
+system_packages:
+  repositories:
+    - name: 'centos_base'
+      baseurl: 'http://mirror.centos.org/centos/$releasever/os/$basearch/'
+      enabled: '1'
+      gpgcheck: '1'
+      gpgkey: 'file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7'
+
+    - name: 'centos_extras'
+      baseurl: 'http://mirror.centos.org/centos/$releasever/extras/$basearch/'
+      enabled: '1'
+      gpgcheck: '1'
+      gpgkey: 'file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7'
+
+    - name: 'centos_updates'
+      baseurl: 'http://mirror.centos.org/centos/$releasever/updates/$basearch/'
+      enabled: '1'
+      gpgcheck: '1'
+      gpgkey: 'file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7'
+
+    - name: 'epel'
+      baseurl: 'http://download.fedoraproject.org/pub/epel/7/$basearch'
+      enabled: '1'
+      gpgcheck: '1'
+      gpgkey: 'file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7'
+
+    - name: 'repoforge'
+      baseurl: 'http://apt.sw.be/redhat/el7/en/$basearch/rpmforge'
+      enabled: '1'
+      gpgcheck: '1'
+      gpgkey: 'file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rpmforge-dag'

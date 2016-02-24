@@ -1,0 +1,75 @@
+---
+# groups
+- name: 'groups add'
+  group:
+    name: '{{ item }}'
+    state: 'present'
+  with_items: system_users.groups
+
+# users
+- name: 'users add 1'
+  user:
+    name: '{{ item.name }}'
+    group: '{{ item.group }}'
+    shell: '{{ item.shell }}'
+    createhome: '{{ item.createhome }}'
+    home: '{{ item.home }}'
+    state: 'present'
+  with_items: system_users.users
+
+- name: 'users add 2'
+  user:
+    name: '{{ item.name }}'
+    groups: '{{ item.groups }}'
+    append: 'yes'
+  with_items: system_users.users
+  when: item.groups is defined
+
+- name: 'users add 3'
+  user:
+    name: '{{ item.name }}'
+    password: '{{ item.password }}'
+    append: 'yes'
+  with_items: system_users.users
+  when: item.password is defined
+
+- name: 'users add 4'
+  template:
+    src: 'configs/sudo/sudoers.d/user.j2'
+    dest: '/etc/sudoers.d/{{ item.name }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  with_items: system_users.users
+  when: item.sudo is defined
+
+# config
+- name: 'config 1'
+  template:
+    src: 'configs/sudo/sudoers.j2'
+    dest: '/etc/sudoers'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+
+# bash
+- name: 'bash scripts copy'
+  template:
+    src: 'scripts/bash/{{ item }}.j2'
+    dest: '/etc/profile.d/{{ item }}'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  with_items:
+    - 'common.sh'
+
+- name: 'bash remove logs 1'
+  file:
+    dest: '/root/.bash_history'
+    state: 'absent'
+
+- name: 'bash remove logs 2'
+  file:
+    dest: '{{ item.home }}/.bash_history'
+    state: 'absent'
+  with_items: system_users.users

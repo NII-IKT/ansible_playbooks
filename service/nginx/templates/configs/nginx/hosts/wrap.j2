@@ -1,0 +1,168 @@
+{% if item.www_subdomain is defined and item.www_subdomain == 'yes' %}
+server {
+    listen {{ item.ip }}:{{ item.port.http }};
+    server_name www.{{ item.hostname }};
+
+    location / {
+        return 301 http://{{ item.hostname }}:{{ item.port.http }}$request_uri;
+    }
+}
+
+server {
+    listen {{ item.ip }}:{{ item.port.https }} ssl;
+    server_name www.{{ item.hostname }};
+
+    # ssl
+    ssl on;
+    ssl_certificate hosts/{{ item.hostname }}/server.crt;
+    ssl_certificate_key hosts/{{ item.hostname }}/server.key;
+    ssl_protocols {{ item.ssl.protocols }};
+    ssl_ciphers {{ item.ssl.ciphers }};
+
+    location / {
+        return 301 https://{{ item.hostname }}:{{ item.port.https }}$request_uri;
+    }
+}
+{% endif %}
+
+{% if item.https_redirect is defined and item.https_redirect == 'yes' %}
+server {
+    listen {{ item.ip }}:{{ item.port.http }} {% if item.default_server is defined and item.default_server == 'yes' %} default_server {% endif %};
+    server_name {{ item.hostname }};
+
+    location / {
+        return 301 https://{{ item.hostname }}:{{ item.port.https }}$request_uri;
+    }
+}
+{% else %}
+server {
+    listen {{ item.ip }}:{{ item.port.http }} {% if item.default_server is defined and item.default_server == 'yes' %} default_server {% endif %};
+    server_name {{ item.hostname }};
+
+    root /var/www/{{ item.hostname }};
+    index index.html;
+
+    access_log /var/log/nginx/{{ item.hostname }}/access.log {{ item.access_log_format }};
+    error_log /var/log/nginx/{{ item.hostname }}/error.log {{ item.error_log_level }};
+
+{% if item.allowed_ips is defined %}
+    # allowed ips
+{% for ip in item.allowed_ips %}
+    allow {{ ip }};
+{% endfor %}
+    deny all;
+{% endif %}
+
+{% if item.auth_basic is defined %}
+    # auth
+    auth_basic "Authentication required";
+    auth_basic_user_file hosts/{{ item.hostname }}/htpasswd;
+{% endif %}
+
+    # ban bad useragents
+    if ($http_user_agent ~ (Wget|curl)) {
+        return 404;
+    }
+
+    # forbid access to SCM folders
+    location ~* \.(git|hg|svn) {
+        internal;
+    }
+
+    # status
+    location /nginx_status {
+        stub_status on;
+        access_log off;
+
+        allow 127.0.0.1;
+        deny all;
+    }
+
+    # http errors
+    error_page 404 /404.html;
+    location = /404.html {
+        root /var/www/{{ item.hostname }}/http_errors;
+    }
+
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /var/www/{{ item.hostname }}/http_errors;
+    }
+
+    location /http_errors {
+        internal;
+    }
+
+    # project locations
+    include hosts/{{ item.hostname }}/config_locations.conf;
+}
+{% endif %}
+
+server {
+    listen {{ item.ip }}:{{ item.port.https }} ssl {% if item.default_server is defined and item.default_server == 'yes' %} default_server {% endif %};
+    server_name {{ item.hostname }};
+
+    root /var/www/{{ item.hostname }};
+    index index.html;
+
+    access_log /var/log/nginx/{{ item.hostname }}/access.log {{ item.access_log_format }};
+    error_log /var/log/nginx/{{ item.hostname }}/error.log {{ item.error_log_level }};
+
+    # ssl
+    ssl on;
+    ssl_certificate hosts/{{ item.hostname }}/server.crt;
+    ssl_certificate_key hosts/{{ item.hostname }}/server.key;
+    ssl_protocols {{ item.ssl.protocols }};
+    ssl_ciphers {{ item.ssl.ciphers }};
+
+{% if item.allowed_ips is defined %}
+    # allowed ips
+{% for ip in item.allowed_ips %}
+    allow {{ ip }};
+{% endfor %}
+    deny all;
+{% endif %}
+
+{% if item.auth_basic is defined %}
+    # auth
+    auth_basic "Authentication required";
+    auth_basic_user_file hosts/{{ item.hostname }}/htpasswd;
+{% endif %}
+
+    # ban bad useragents
+    if ($http_user_agent ~ (Wget|curl)) {
+        return 404;
+    }
+
+    # forbid access to SCM folders
+    location ~* \.(git|hg|svn) {
+        internal;
+    }
+
+    # status
+    location /nginx_status {
+        stub_status on;
+        access_log off;
+
+        allow 127.0.0.1;
+        deny all;
+    }
+
+    # http errors
+    error_page 404 /404.html;
+    location = /404.html {
+        root /var/www/{{ item.hostname }}/http_errors;
+    }
+
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /var/www/{{ item.hostname }}/http_errors;
+    }
+
+    location /http_errors {
+        internal;
+    }
+
+    # project locations
+    include hosts/{{ item.hostname }}/config_locations.conf;
+}

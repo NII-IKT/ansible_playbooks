@@ -1,0 +1,120 @@
+---
+network_iptables:
+  save: 'yes' # useful for debug.
+
+  # filter table
+  filter:
+    #
+    # public
+    #
+    - name: 'ssh'
+      create: 'yes'
+      manual: 'yes' # if set would not be enabled via iptables_setup.sh. should be enabled via script
+      interface: 'enp0s3'
+      protocols: ['tcp']
+      ports:
+        in: ['22']
+        out: ['22']
+      rules:
+        - src:
+            ips: ['*'] # wildcard needed for correct 4 dimension loop
+            ports: ['*'] # wildcard needed for correct 4 dimension loop
+          dst:
+            ips: ['*'] # wildcard needed for correct 4 dimension loop
+            ports: ['22']
+          conntrack: 'all'
+          action: 'ACCEPT'
+
+        - src:
+            ips: ['*'] # wildcard needed for correct 4 dimension loop
+            ports: ['22']
+          dst:
+            ips: ['*'] # wildcard needed for correct 4 dimension loop
+            ports: ['*'] # wildcard needed for correct 4 dimension loop
+          conntrack: 'established'
+          action: 'ACCEPT'
+
+    #
+    # local
+    #
+    - name: 'php'
+      create: 'yes'
+      interface: 'lo'
+      protocols: ['tcp']
+      ports:
+        in: ['9000']
+        out: ['9000']
+      rules:
+        - src:
+            ips: ['127.0.0.1', '127.0.0.2', '127.0.0.3']
+            ports: ['*'] # wildcard needed for correct 4 dimension loop
+          dst:
+            ips: ['127.0.0.1']
+            ports: ['9000']
+          conntrack: 'all'
+          action: 'ACCEPT'
+
+        - src:
+            ips: ['127.0.0.1']
+            ports: ['9000']
+          dst:
+            ips: ['127.0.0.1', '127.0.0.2', '127.0.0.3']
+            ports: ['*'] # wildcard needed for correct 4 dimension loop
+          conntrack: 'established'
+          action: 'ACCEPT'
+
+    #
+    # all (INPUT and OUTPUT chains should be in the end)
+    #
+    - name: 'INPUT'
+      policy: 'ACCEPT'
+      create: 'no'
+
+    - name: 'OUTPUT'
+      policy: 'ACCEPT'
+      create: 'no'
+
+  # nat table
+  nat:
+    dnat:
+      - name: 'http'
+        protocol: 'tcp'
+        interface: 'enp0s3'
+        src:
+          ip: '*'
+          port: '*'
+        dst:
+          ip: '127.0.0.1'
+          port: '80'
+        to: # change dst to
+          ip: '10.8.0.1'
+          port: '80'
+
+    snat:
+      - name: 'http'
+        protocol: 'tcp'
+        interface: 'enp0s3'
+        src:
+          ip: '*'
+          port: '*'
+        dst:
+          ip: '10.8.0.1'
+          port: '80'
+        to: # change src to
+          ip: '10.8.0.10'
+
+  # mangle table
+  mangle:
+    mark:
+      - name: 'http'
+        chain: 'OUTPUT'
+        protocol: 'tcp'
+        src:
+          interface: 'enp0s3'
+          ip: '*'
+          port: '*'
+        dst:
+          interface: 'tun0'
+          ip: '10.8.0.1'
+          port: '80'
+        mark: 1

@@ -1,0 +1,5 @@
+---
+- name: 'yum-cron restart'
+  service:
+    name: 'yum-cron'
+    state: 'restarted'
